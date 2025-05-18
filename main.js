@@ -116,10 +116,6 @@ window.onload = () => {
 
     });
 
-
-
-
-
     document.addEventListener("keypress", (e) => {
         if (e.key == " ") {
             render(.015);
@@ -127,9 +123,6 @@ window.onload = () => {
 
 
     })
-
-
-
 
     manageControls();
 

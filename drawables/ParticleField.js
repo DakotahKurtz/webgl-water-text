@@ -182,13 +182,13 @@ class ParticleField {
             return 0;
         }
         let l = (radius * radius - dst * dst);
-        return (-24 * dst * (l * l)) / (Math.PI * Math.pow(radius, 8));
+        return (-12 * dst * (l * l)) / (Math.PI * Math.pow(radius, 6));
     }
 
     smoothingKernel(radius, dst) {
-        let volume = Math.PI * Math.pow(radius, 8) / 4;
+        let volume = Math.PI * Math.pow(radius, 6) / 3;
         let value = Math.max(0, radius * radius - dst * dst);
-        return (value * value * value) / volume;
+        return (value * value) / volume;
     }
 
 
