@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+
+<html>
+<style type="text/css">
+    canvas {
+        background: blue;
+    }
+</style>
+
+
+
+<script type="text/javascript" src="../sharedUtils/webgl-utils/webgl-help.js"></script>
+<script type="text/javascript" src="../sharedUtils/webgl-utils/MV.js"></script>
+<script type="text/javascript" src="../sharedUtils/webgl-utils/ProgramData.js"></script>
+<script src="../sharedUtils/webgl-utils/webgl-utils.js"></script>
+<script src="../sharedUtils/utils.js"></script>
+<script src="../sharedUtils/Camera.js"></script>
+<script src="../sharedUtils/sharedDrawables/TransparentBox.js"></script>
+<script src="../sharedUtils/sharedDrawables/vertexGenerators.js"></script>
+
+<script src="drawables/ParticleField.js"></script>
+<script src="drawables/BoundingBox2D.js"></script>
+
+<script src="Particle.js"></script>
+<script type="text/javascript" src="main.js"></script>
+
+<body>
+    <canvas id="gl-canvas" width="800" height="800">
+        Oops ... your browser doesn't support the HTML5 canvas element
+    </canvas>
+
+
+
+
+</body>
+
+</html>
+
+
+
+<script id="vertex-shader-sparse" type="x-shader/x-vertex">
+
+    attribute vec4 vPosition;
+    attribute vec4 a_color;
+    
+    varying vec4 fColor;
+    
+    uniform mat4 objectMatrix;
+    uniform mat4 modelView;
+    uniform mat4 projection;
+    uniform float pointSize;
+
+    void
+    main()
+    {
+        gl_PointSize = pointSize;
+
+        gl_Position = projection * modelView * objectMatrix * vPosition;
+           //gl_Position = vPosition; 
+        fColor = a_color;
+    }
+        </script>
+
+<script id="fragment-shader-sparse" type="x-shader/x-fragment">
+
+    precision mediump float;
+
+    varying vec4 fColor;
+    void
+    main()
+    {
+    
+        gl_FragColor = fColor;
+    
+    }
+</script>
