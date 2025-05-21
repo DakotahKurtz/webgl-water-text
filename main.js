@@ -73,21 +73,31 @@ window.onload = () => {
 
     var particles = [];
 
-    let width = 1;
+    let width = 1.5;
     let height = 1;
     let dimension = 4;
-    let numParticles = 500;
-
+    let rows = 30;
+    let cols = 20;
+    let numParticles = 1000;
 
     let spacing = .1;
+    let displayW = 2 * (width - spacing);
+    let displayH = 2 * (height - spacing);
 
-
-    for (let i = 0; i < numParticles; i++) {
-        let x = getRandomFloat(-width + spacing, width - spacing)
-        let y = getRandomFloat(-height + spacing, height - spacing);
-        let z = 0;
-        particles.push(new Particle([x, y, z], [x, y, z], [0, 0, 0], [0, 0, 0]));
+    for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+            let x = (-width + spacing) + i * (displayW) / rows;
+            let y = (-height + spacing) + j * (displayH) / cols;
+            particles.push(new Particle([x, y, 0], [x, y, 0], [0, 0, 0], [0, -1, 0]))
+        }
     }
+
+    // for (let i = 0; i < numParticles; i++) {
+    //     let x = getRandomFloat((-width + spacing) / 2, width - spacing)
+    //     let y = getRandomFloat(-height + spacing, height - spacing);
+    //     let z = 0;
+    //     particles.push(new Particle([x, y, z], [x, y, z], [0, 0, 0], [0, -1, 0]));
+    // }
 
     var boundingBox = new BoundingBox2D(
         gl, -width, width, height, -height);
@@ -110,8 +120,10 @@ window.onload = () => {
 
         let intersection = findIntersection(event);
 
+        if (pressedKeys["q"]) {
+            particleField.applyForce(intersection);
 
-        particleField.applyForce(intersection);
+        }
         console.log(particleField.calculateDensity(intersection))
 
     });
@@ -303,10 +315,10 @@ window.onload = () => {
             } else if (pressedKeys["p"]) {
                 switch (event.key) {
                     case ("ArrowLeft"):
-                        particleField.pressureMultiplier -= 1
+                        particleField.pressureMultiplier -= .01
                         break;
                     case ("ArrowRight"):
-                        particleField.pressureMultiplier += 1;
+                        particleField.pressureMultiplier += .01;
                         break;
                     case ("ArrowUp"):
                         particleField.targetDensity += 1;
@@ -315,10 +327,10 @@ window.onload = () => {
                         particleField.targetDensity -= 1;
                         break;
                     case ("i"):
-                        particleField.smoothingRadius -= .01;
+                        particleField.setSmoothingRadius(particleField.getSmoothingRadius() - .01);
                         break;
                     case ("o"):
-                        particleField.smoothingRadius += .01;
+                        particleField.setSmoothingRadius(particleField.getSmoothingRadius() + .01);
                         break;
 
                 }
