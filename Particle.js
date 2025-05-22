@@ -3,6 +3,7 @@ class Particle {
         // let transformed = mult(transform, [currPos[0], currPos[1], currPos[2], 1]);
         // this.currPos = [transformed[0], transformed[1], transformed[2]];
         this.currPos = currPos;
+        this.posPrediction = currPos;
         this.desiredPos = desiredPos;
         this.currV = initV;
         this.a = initA;
@@ -13,6 +14,12 @@ class Particle {
 
     applyForce(f) {
         this.currV = addVectors(this.currV, f);
+    }
+
+    updatePosPrediction(dT) {
+        let nextV = addVectors(this.currV, scaleVector(this.a, dT));
+
+        this.posPrediction = addVectors(this.currPos, scaleVector(nextV, dT));
     }
 
     update(dT) {

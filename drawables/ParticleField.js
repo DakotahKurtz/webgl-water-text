@@ -7,13 +7,19 @@ class ParticleField {
         this.color = [.3, .6, .9, 1];
         this.boundingBox = boundingBox;
 
-        this.particleRadius = .02;
-        this.sideCount = 6;
-        this.smoothingRadius = .1;
+        this.particleRadius = .03;
+        this.sideCount = 9;
+        this.smoothingRadius = .2;
 
-        this.targetDensity = 500;
-        this.pressureMultiplier = .01;
+        this.targetDensity = 10;
+        this.pressureMultiplier = .18;
         this.tick = 0;
+        this.viscosityStrength = .22;
+
+        this.slowColor = [70 / 255, 40 / 255, 250 / 255]
+        this.fastColor = [180 / 255, 200 / 255, 250 / 255];
+
+        this.cRange = subtract(this.fastColor, this.slowColor);
 
         this.particleContainers = this.initParticleContainers();
 
@@ -38,16 +44,40 @@ class ParticleField {
         return containers;
     }
 
-    applyForce(location) {
-        console.log("Apply Force: " + location);
-        let scalar = .03;
+    applyUPForce(location, dT) {
         this.particles.forEach((p) => {
             let locToP = subtract(p.currPos, location);
             let magnitude = vectorMagnitude(locToP);
-            let N = scaleVector(locToP, 1 / magnitude);
-            let F = scaleVector(N, scalar / (magnitude * magnitude));
+            if (magnitude < 1 && locToP[1] > 0) {
+                let F = scaleVector([0, 8, 0], dT / (magnitude));
 
-            p.applyForce(F);
+                p.currV = addVectors(p.currV, F)
+            }
+
+        })
+    }
+
+    applyForce(location, f) {
+        this.particles.forEach((p) => {
+            let locToP = subtract(p.currPos, location);
+            let magnitude = vectorMagnitude(locToP);
+            if (f > 0) {
+                if (magnitude < 1) {
+                    let N = scaleVector(locToP, 10 / magnitude);
+                    let F = scaleVector(N, f);
+
+                    p.applyForce(F);
+                }
+            } else {
+                if (magnitude < 1) {
+                    let N = scaleVector(locToP, magnitude);
+                    let F = scaleVector(N, -1 / magnitude);
+
+                    p.applyForce(F);
+                }
+            }
+
+
         })
     }
 
@@ -58,72 +88,35 @@ class ParticleField {
         let colors = [];
 
 
-        // this.particles.forEach(element => {
-        //     let pos = element.currPos;
-        //     points.push(regularPolygonVertices(pos, this.particleRadius, this.sideCount));
-        // });
-
         let verticesPerParticle = this.sideCount * 3;
         let color;
         let vertices = [];
-        // for (let i = 0; i < points.length; i++) {
-        //     if (this.particles)
-        //     for (let j = 0; j < verticesPerParticle; j++) {
-        //         vertices.push(points[i][j]);
-        //         if (i == 1) {
-        //             colors.push([1, 0, 0, 1])
-        //         } else {
-        //             colors.push(this.color);
 
-        //         }
-        //     }
-        // }
+
+
+
 
         for (let i = 0; i < this.particleContainers.length; i++) {
             for (let j = 0; j < this.particleContainers[i].length; j++) {
                 for (let k = 0; k < this.particleContainers[i][j].length; k++) {
 
-
-
-
-
-
                     let particleData = this.particleContainers[i][j][k];
-                    // let pressureForce = this.calculatePressureForce(i, j, k);
-                    // let pressureForce2 = this.calculatePressureForce2(particleData.index);
 
                     points = (regularPolygonVertices(particleData.p.currPos, this.particleRadius, this.sideCount))
-                    // if (Math.abs(particleData.d - this.targetDensity) < 1) {
-                    if (particleData.lineIndex == 1) {
-                        color = [1, 0, 1, 1];
-                    } else {
-                        color = [0, 0, 0, 1] // blue just right
 
-                    }
-                    // } else if (particleData.d < this.targetDensity) {
-                    //     color = [1, 0, 0, 1]; // red too low
-                    // } else {
-                    //     color = [0, 1, 0, 1] // yellow too high
-                    // }
-                    // if (pressureForce[0] == pressureForce2[0] && pressureForce[1] == pressureForce2[1]) {
-                    //     color = [0, 0, 1, 1]
-                    // } else {
-                    //     color = [1, 0, 0, 1]
-                    // }
-                    // if (i == 0 && j == 0) {
-                    //     color = [1, 0, 0, 1]
-                    // } else if (i == 0 && j == 1) {
-                    //     color = [0, 1, 0, 1]
-                    // } else if (i == 1 && j == 0) {
-                    //     color = [0, 0, 1, 1]
-                    // } else {
-                    //     color = [1, 1, 0, 1]
-                    // }
+
+                    let v1 = Math.min(vectorMagnitude(particleData.p.currV), 8);
+                    let a = (v1 - 0) / 8;
+                    //console.log(a)
+                    let cProp = scaleVector(this.cRange, a);
+                    let c = addVectors(this.slowColor, cProp);
+                    // console.log(c);
+
+
                     for (let l = 0; l < verticesPerParticle; l++) {
                         vertices.push(points[l])
-                        colors.push(color)
+                        colors.push([c[0], c[1], c[2], 1])
                     }
-
                 }
             }
         }
@@ -169,7 +162,7 @@ class ParticleField {
 
     update(dT) {
 
-        this.densities = [];
+        this.nextV = [];
 
         for (let i = 0; i < this.particleContainers.length; i++) {
             for (let j = 0; j < this.particleContainers[i].length; j++) {
@@ -179,21 +172,15 @@ class ParticleField {
 
         this.tick++;
 
-
         for (let i = 0; i < this.particles.length; i++) {
-
             let currParticle = this.particles[i];
-            let dampening = .99;
-            currParticle.currV = scaleVector(currParticle.currV, dampening);
+            this.nextV.push(currParticle.currV);
+
+
 
             let particleCol = Math.min(Math.floor((currParticle.currPos[0] + this.boundingBox.right) / this.smoothingRadius), this.particleContainers[0].length - 1);
             let particleRow = Math.min(Math.floor((currParticle.currPos[1] + this.boundingBox.up) / this.smoothingRadius), this.particleContainers.length - 1);
 
-            // if (particleCol >= this.particleContainers[0].length) {
-            //     console.log("breaking col: " + particleCol + ", " + this.particleContainers[0].length)
-            // } else if (particleRow >= this.particleContainers.length) {
-            //     console.log("breaking Row: " + particleRow + ", " + this.particleContainers.length)
-            // }
             let index = this.particleContainers[particleRow][particleCol].length;
 
             this.particleContainers[particleRow][particleCol].push(
@@ -206,132 +193,109 @@ class ParticleField {
                 }
             );
 
-            this.densities.push(this.calculateDensity(currParticle.currPos));
         }
-
-
-
-
 
         for (let i = 0; i < this.particleContainers.length; i++) {
             for (let j = 0; j < this.particleContainers[i].length; j++) {
-
-
                 for (let k = 0; k < this.particleContainers[i][j].length; k++) {
                     let currParticleData = this.particleContainers[i][j][k];
-                    let currParticle = currParticleData.p;
-                    //console.log(currParticle.currPos);
-                    let pressureForce = this.calculatePressureForce(i, j, k);
-                    //let pressureForce = this.calculatePressureForce2(currParticleData.lineIndex);
 
-                    // console.log("*******\nNew: " + pressureForce + ", old " + pressureForce2 + "\n********\n")
+                    let neighbors = this.getNeighbors(i, j, k);
 
+                    let pressureForce = this.calculatePressureForce(currParticleData, neighbors);
                     let deltaV = scaleVector(pressureForce, (dT / currParticleData.d));
-                    currParticle.currV = addVectors(deltaV, currParticle.currV)
+                    this.nextV[currParticleData.lineIndex] = addVectors(deltaV, this.nextV[currParticleData.lineIndex])
 
+                    let viscosityForce = this.calculateViscosityForce(currParticleData, neighbors);
+                    this.nextV[currParticleData.lineIndex] = addVectors(scaleVector(viscosityForce, dT), this.nextV[currParticleData.lineIndex])
 
                 }
             }
         }
 
 
-        // for (let i = 0; i < this.particles.length; i++) {
-        //     let currParticle = this.particles[i];
-        //     let pressureForce = this.calculatePressureForce(i);
 
-        //     let deltaV = scaleVector(pressureForce, (dT / this.densities[i]));
-        //     // currParticle.currV = addVectors(currParticle.currV, deltaV);
+        for (let i = 0; i < this.particles.length; i++) {
+            this.particles[i].currV = this.nextV[i];
 
-        // }
+            this.particles[i].update(dT);
+            this.ensureInBounds(this.particles[i]);
 
+            let dampening = .99;
+            this.particles[i].currV = scaleVector(this.particles[i].currV, dampening);
+            this.particles[i].updatePosPrediction(dT);
 
-
-        this.particles.forEach((p) => {
-            p.update(dT);
-            this.ensureInBounds(p);
-
-        })
-
-
+        }
 
         this.setBuffers();
     }
 
-    calculatePressureForce(row, col, index) {
-        let pressureForce = [0, 0, 0];
-        let primaryParticleData = this.particleContainers[row][col][index];
-        let primaryParticle = primaryParticleData.p;
-        //console.log("PressureForce: " + row + ", " + col + ", " + index + ", " + primaryParticle.currPos)
+    getNeighbors(row, col, index) {
+        let neighbors = [];
         for (let i = row - 1; i <= row + 1; i++) {
             for (let j = col - 1; j <= col + 1; j++) {
                 if (i >= 0 && j >= 0 && i < this.particleContainers.length && j < this.particleContainers[i].length) {
                     for (let k = 0; k < this.particleContainers[i][j].length; k++) {
                         if (i == row && j == col && k == index) continue;
-                        let cPData = this.particleContainers[i][j][k];
-                        let cP = cPData.p;
-
-                        let btw = subtract(cP.currPos, primaryParticle.currPos);
-                        let dst = vectorMagnitude(btw);
-                        let dir;
-                        if (dst == 0) {
-                            dir = this.randomUnitVector();
-                        } else {
-                            dir = scaleVector(btw, (1 / dst));
-                        }
-
-                        let slope = this.smoothingKernelDerivative(this.smoothingRadius, dst);
-                        let sharedPressure = this.sharedPressure(cPData.d, primaryParticleData.d);
-
-                        let scale = slope / cPData.d;
-
-                        let contribution = sharedPressure * scale;
-                        let hereToThere = scaleVector(dir, contribution);
-                        let thereToHere = scaleVector(dir, -contribution);
-                        cP.currV = addVectors(cP.currV, thereToHere);
-                        pressureForce = addVectors(pressureForce, hereToThere)
-
+                        neighbors.push(this.particleContainers[i][j][k])
                     }
                 }
             }
         }
-
-        return pressureForce;
+        return neighbors;
     }
 
-    calculatePressureForce2(index) {
+    calculateViscosityForce(particleData, neighbors) {
+        let viscosityForce = [0, 0, 0];
+        let currParticle = particleData.p;
+
+        neighbors.forEach((otherParticleData) => {
+            let dst = vectorMagnitude(subtract(currParticle.currPos, otherParticleData.p.currPos));
+            let influence = this.smoothingKernel(this.smoothingRadius, dst);
+            if (influence != 0) {
+                let vDst = subtract(currParticle.currV, otherParticleData.p.currV);
+                let scaled = scaleVector(vDst, -influence / 2);
+                viscosityForce = addVectors(viscosityForce, scaled);
+            }
+
+        });
+
+        return scaleVector(viscosityForce, this.viscosityStrength);
+    }
+
+    calculatePressureForce(particle, neighbors) {
         let pressureForce = [0, 0, 0];
-        let primaryParticle = this.particles[index];
+        let primaryParticle = particle.p;
+        neighbors.forEach((otherParticleData) => {
+            let cP = otherParticleData.p;
 
-        for (let i = 0; i < this.particles.length; i++) {
-            if (index == i) continue;
-
-            let cP = this.particles[i];
-            let btw = subtract(cP.currPos, primaryParticle.currPos);
+            let btw = subtract(cP.posPrediction, primaryParticle.posPrediction);
             let dst = vectorMagnitude(btw);
             let dir;
             if (dst == 0) {
                 dir = this.randomUnitVector();
-            } else if (dst > this.smoothingRadius) {
-                continue;
             } else {
                 dir = scaleVector(btw, (1 / dst));
             }
 
-
             let slope = this.smoothingKernelDerivative(this.smoothingRadius, dst);
-            let sharedPressure = this.sharedPressure(this.densities[i], this.densities[index]);
+            let sharedPressure = this.sharedPressure(otherParticleData.d, particle.d);
 
-            let scale = slope / this.densities[i];
+            let scale = slope / otherParticleData.d;
 
             let contribution = sharedPressure * scale;
             let hereToThere = scaleVector(dir, contribution);
             let thereToHere = scaleVector(dir, -contribution);
-            cP.currV = addVectors(cP.currV, thereToHere);
+            this.nextV[otherParticleData.lineIndex] = addVectors(this.nextV[otherParticleData.lineIndex], thereToHere);
             pressureForce = addVectors(pressureForce, hereToThere)
-        }
+        })
+
+
+
 
         return pressureForce;
     }
+
 
     sharedPressure(a, b) {
         let pressureA = this.convertDensityToPressure(a);
@@ -348,7 +312,6 @@ class ParticleField {
     }
 
     calculateDensity(samplePoint) {
-        //console.log("samplePoint: " + samplePoint)
         let density = 0;
 
         let mass = 1;

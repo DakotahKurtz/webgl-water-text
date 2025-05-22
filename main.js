@@ -73,22 +73,31 @@ window.onload = () => {
 
     var particles = [];
 
-    let width = 1.5;
-    let height = 1;
+    let width = 2;
+    let height = 1.5;
     let dimension = 4;
     let rows = 30;
-    let cols = 20;
+    let cols = 22;
     let numParticles = 1000;
+    var mouseDown = 0;
+    var mouseX, mouseY;
+    document.body.onmousedown = function () {
+        ++mouseDown;
+    }
+    document.body.onmouseup = function () {
+        --mouseDown;
+    }
 
-    let spacing = .1;
+    let spacing = .5;
     let displayW = 2 * (width - spacing);
-    let displayH = 2 * (height - spacing);
+    let displayH = 1;
+    let particleDensity = 500; // per 1x1 grid
 
     for (let i = 0; i < rows; i++) {
         for (let j = 0; j < cols; j++) {
             let x = (-width + spacing) + i * (displayW) / rows;
             let y = (-height + spacing) + j * (displayH) / cols;
-            particles.push(new Particle([x, y, 0], [x, y, 0], [0, 0, 0], [0, -1, 0]))
+            particles.push(new Particle([x, y, 0], [x, y, 0], [0, 0, 0], [0, 0, 0]))
         }
     }
 
@@ -120,13 +129,26 @@ window.onload = () => {
 
         let intersection = findIntersection(event);
 
-        if (pressedKeys["q"]) {
-            particleField.applyForce(intersection);
+        // if (pressedKeys["q"]) {
+        //     particleField.applyUPForce(intersection);
 
-        }
+        // }
         console.log(particleField.calculateDensity(intersection))
 
     });
+
+    canvas.addEventListener('mousemove', (event) => {
+        let intersection = findIntersection(event);
+        mouseX = intersection[0];
+        mouseY = intersection[1];
+
+        if (pressedKeys["1"]) {
+            particleField.applyForce(intersection, .1);
+
+        } else if (pressedKeys["2"]) {
+            particleField.applyForce(intersection, -.5);
+        }
+    })
 
     document.addEventListener("keypress", (e) => {
         if (e.key == " ") {
@@ -149,12 +171,17 @@ window.onload = () => {
     }
 
 
+
     function render(now) {
 
         now *= 0.001;
-        let deltaTime = .015;
+        let deltaTime = .015
         then = now;
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        if (pressedKeys["q"] && mouseDown > 0) {
+            particleField.applyUPForce([mouseX, mouseY, 0], deltaTime);
+        }
 
         DrawableTypes["Sparse"].drawableObjects.push(
             LookAtBox(camera),
@@ -247,7 +274,18 @@ window.onload = () => {
 
         document.addEventListener('keydown', function (event) {
 
-
+            if (pressedKeys["v"]) {
+                switch (event.key) {
+                    case ("ArrowLeft"):
+                        particleField.viscosityStrength -= .01;
+                        break;
+                    case ("ArrowRight"):
+                        particleField.viscosityStrength += .01;
+                        break;
+                }
+                console.log(particleField.viscosityStrength);
+                return;
+            }
 
 
 
